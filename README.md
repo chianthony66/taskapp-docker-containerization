@@ -4,11 +4,9 @@ A containerized full-stack TaskApp environment implementing Docker-based applica
 
 ## Project Overview
 
-This project packages and orchestrates a full-stack TaskApp application using Docker.
+This project packages and orchestrates a full-stack TaskApp application using Docker. The implementation covers the application container lifecycle from image construction and runtime configuration through multi-container orchestration and environment-specific Compose configurations.
 
-The implementation covers the application container lifecycle from image construction and runtime configuration through multi-container orchestration and environment-specific Compose configurations.
-
-## Key Objectives
+### Key Objectives
 
 - Containerize the React frontend using a multi-stage Docker build.
 - Serve the production frontend with Nginx.
@@ -24,7 +22,7 @@ The implementation covers the application container lifecycle from image constru
 
 ## Architecture
 
-```
+```text
                          ┌─────────────────────┐
                          │       Browser       │
                          │   localhost:8080    │
@@ -61,7 +59,7 @@ The implementation covers the application container lifecycle from image constru
                     taskapp-network
 ```
 
-The frontend, backend, and database communicate through the custom taskapp-network bridge network. PostgreSQL data is persisted through the postgres_data Docker volume.
+The frontend, backend, and database communicate through the custom `taskapp-network` bridge network. PostgreSQL data is persisted through the `postgres_data` Docker volume.
 
 ## Technology Stack
 
@@ -96,6 +94,8 @@ RUN npm ci --frozen-lockfile
 RUN npm run build
 ```
 
+Using a separate build stage keeps the Node.js build environment separate from the final runtime image.
+
 ### Runtime Stage
 
 The generated assets are served from a lightweight Nginx image:
@@ -107,7 +107,7 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=builder /app/dist /usr/share/nginx/html
 ```
 
-This keeps the Node.js build environment separate from the frontend runtime image.
+This separates frontend compilation from production asset serving.
 
 ### Nginx Configuration
 
@@ -122,13 +122,13 @@ The Nginx configuration provides:
 
 The health endpoint is:
 
-```
+```text
 /health
 ```
 
 and returns:
 
-```
+```text
 frontend-healthy
 ```
 
@@ -152,7 +152,7 @@ RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
 USER appuser
 ```
 
-The backend therefore runs as appuser rather than the root user.
+The backend therefore runs as `appuser` rather than the root user.
 
 ## Database Readiness and Startup Automation
 
@@ -180,7 +180,7 @@ gunicorn \
 
 ### Backend Startup Flow
 
-```
+```text
 Container starts
       │
       ▼
@@ -203,7 +203,7 @@ Backend API available
 
 PostgreSQL is deployed using:
 
-```
+```text
 postgres:15-alpine
 ```
 
@@ -216,7 +216,15 @@ volumes:
 
 This keeps database persistence separate from the lifecycle of the PostgreSQL container.
 
-A Compose health check uses pg_isready to determine when the database is ready to accept connections.
+A Compose health check uses `pg_isready` to determine when the database is ready to accept connections:
+
+```yaml
+healthcheck:
+  test: ["CMD-SHELL", "pg_isready -U taskapp_user -d taskapp"]
+  interval: 10s
+  timeout: 5s
+  retries: 5
+```
 
 ## Docker Networking
 
@@ -228,11 +236,9 @@ networks:
     driver: bridge
 ```
 
-The application services are connected to this network.
+The application services are connected to this network. The backend communicates with PostgreSQL through the Compose service name:
 
-The backend communicates with PostgreSQL through the Compose service name:
-
-```
+```text
 DATABASE_HOST=db
 ```
 
@@ -276,6 +282,12 @@ The Compose configuration was validated using:
 docker compose config
 ```
 
+The resolved configuration confirms the expected services, build contexts, networking, environment configuration, dependencies, and port mappings.
+
+### Compose Configuration Evidence
+
+![Docker Compose Configuration](images/docker-compose-config.png)
+
 ## Running the Application Stack
 
 The application can be built and started with:
@@ -292,7 +304,7 @@ docker ps
 
 The resulting environment consists of:
 
-```
+```text
 taskapp-dc
     └── PostgreSQL
 
@@ -314,15 +326,21 @@ The backend runtime output demonstrates:
 - Worker processes starting
 - API requests reaching the backend
 
+### Backend Runtime Evidence
+
+![Backend Runtime Logs](images/backend-runtime-logs.png)
+
 ## Application Verification
 
 The frontend was verified through the browser at:
 
-```
+```text
 http://localhost:8080
 ```
 
 The running application demonstrates that the frontend, backend, and database services are operating together as a containerized application stack.
+
+![Running TaskApp Application](images/taskapp-running.png)
 
 ## Development Configuration
 
@@ -350,6 +368,10 @@ backend:
 
 This allows the application source code on the host to be mounted into the backend container during development.
 
+### Development Override Evidence
+
+![Development Docker Compose Override](images/development-override.png)
+
 ## Production-Like Configuration
 
 A separate production-like Compose configuration is included to demonstrate a more deployment-oriented runtime.
@@ -363,37 +385,34 @@ The configuration:
 - Uses production Flask settings.
 - Configures a smaller Gunicorn worker count.
 - Applies CPU and memory resource limits.
-- Uses restart: unless-stopped.
+- Uses `restart: unless-stopped`.
 
-Example resource limits:
-
-```yaml
-deploy:
-  resources:
-    limits:
-      cpus: "0.5"
-      memory: 512M
-```
-
-The backend is configured for production:
+Example:
 
 ```yaml
-environment:
-  FLASK_ENV: production
-  WORKERS: 2
+backend:
+  restart: unless-stopped
+  ports:
+    - "127.0.0.1:5000:5000"
+  environment:
+    FLASK_ENV: production
+    WORKERS: 2
+  deploy:
+    resources:
+      limits:
+        cpus: "0.5"
+        memory: 512M
 ```
 
 ## Environment Configuration
 
-The project supports environment-specific values through a .env file in the override configuration.
+The project supports environment-specific values through the override configuration.
 
-Sensitive configuration is excluded from version control through .gitignore.
-
-A safe .env.example can document the variables required by the Compose configuration without committing actual secret values.
+Sensitive configuration is excluded from version control through `.gitignore`. A safe `.env.example` documents the variables required by the Compose configuration without committing actual secret values.
 
 Example:
 
-```
+```text
 DB_PASSWORD=
 SECRET_KEY=
 VITE_API_URL=
@@ -402,46 +421,55 @@ VITE_API_URL=
 ## Useful Docker Commands
 
 ### Build and start
+
 ```bash
 docker compose up -d --build
 ```
 
 ### View running containers
+
 ```bash
 docker ps
 ```
 
 ### View Compose service status
+
 ```bash
 docker compose ps
 ```
 
 ### Follow backend logs
+
 ```bash
 docker compose logs -f backend
 ```
 
 ### Enter the backend container
+
 ```bash
 docker compose exec backend bash
 ```
 
 ### Access PostgreSQL
+
 ```bash
 docker compose exec db psql -U taskapp_user -d taskapp
 ```
 
 ### Stop the application
+
 ```bash
 docker compose down
 ```
 
 ### Validate Compose configuration
+
 ```bash
 docker compose config
 ```
 
 ### Start using the production-like configuration
+
 ```bash
 docker compose \
   -f docker-compose.yml \
@@ -451,7 +479,7 @@ docker compose \
 
 ## Project Structure
 
-```
+```text
 taskapp-docker-containerization/
 │
 ├── images/
@@ -504,13 +532,27 @@ taskapp-docker-containerization/
 - Implemented Compose health checks and service dependencies.
 - Created development and production-like Compose configurations.
 - Implemented environment-variable-based configuration.
-- Verified the running stack through Docker status, runtime logs, and browser access.
+- Validated the running configuration with `docker compose config`.
+- Verified the stack through Docker status, runtime logs, and browser access.
 
 ## Project Context
 
 The TaskApp application serves as the workload for this containerization project. The backend and frontend application source originated from existing TaskApp repositories, while this repository focuses on the Docker implementation and infrastructure surrounding the application.
 
-The containerization work covers Dockerfiles, Nginx configuration, container startup automation, networking, persistent storage, Compose orchestration, environment-specific configurations, and runtime verification.
+The containerization work covers:
+
+- Dockerfiles
+- Multi-stage image builds
+- Nginx configuration
+- Container startup automation
+- Docker networking
+- Persistent storage
+- Compose orchestration
+- Health checks
+- Development overrides
+- Production-like configuration
+- Environment-based configuration
+- Runtime verification
 
 ## Future Improvements
 
@@ -525,6 +567,8 @@ The containerization work covers Dockerfiles, Nginx configuration, container sta
 
 ## Author
 
-Anthony Chidi
+**Anthony Chidi**
 
-DevOps Engineer | Docker & Containerization | Cloud Infrastructure
+DevOps / Cloud Engineering Portfolio
+
+[GitHub](https://github.com/chianthony66)
