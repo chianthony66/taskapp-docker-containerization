@@ -1,0 +1,19 @@
+services:
+
+  db:
+    ports:
+      - "5433:5432"   
+
+  backend:
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./taskapp_backend_cicd:/app  
+    environment:
+      FLASK_ENV: development
+      DEBUG: 1
+    command: flask run --host=0.0.0.0 --reload
+
+  frontend:
+    ports:
+      - "8080:80"

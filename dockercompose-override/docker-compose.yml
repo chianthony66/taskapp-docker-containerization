@@ -1,0 +1,60 @@
+services:
+
+  db:
+    image: postgres:15-alpine
+    container_name: taskapp-dc
+    environment:
+      POSTGRES_USER: taskapp_user
+      POSTGRES_DB: taskapp
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - taskapp-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U taskapp_user -d taskapp"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./taskapp_backend_cicd
+      dockerfile: Dockerfile
+    container_name: taskapp-backendc
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: taskapp_user
+      DATABASE_PASSWORD: ${DB_PASSWORD}
+      DATABASE_NAME: taskapp
+      SECRET_KEY: ${SECRET_KEY}
+      FLASK_ENV: production
+      WORKERS: 4
+    networks:
+      - taskapp-network
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./taskapp_frontend_cicd
+      dockerfile: Dockerfile
+    container_name: taskapp-frontendc
+    environment:
+      VITE_API_URL: ${VITE_API_URL}
+    networks:
+      - taskapp-network
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+networks:
+  taskapp-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local

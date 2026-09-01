@@ -1,0 +1,27 @@
+services:
+
+  db:
+    restart: unless-stopped
+    # No ports exposed to host (database is internal only)
+    # Production-like: no host port binding
+
+  backend:
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5000:5000"  # Bind to localhost only
+    # No volume mounts - code is baked into the image at build time
+    environment:
+      FLASK_ENV: production
+      WORKERS: 2
+    # Optional: simulate resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+
+  frontend:
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:80"  # Bind to localhost only
+    # No volume mounts
