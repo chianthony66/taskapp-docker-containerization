@@ -116,56 +116,18 @@ taskapp-docker-containerization/
 
 ## Technology Stack
 
-  Technology       Purpose
-  ---------------- -------------------------------------------------
-  Docker           Application containerization
-  Docker Compose   Multi-container orchestration
-  React / Vite     Frontend application
-  Nginx            Frontend production runtime server
-  Python 3.11      Backend runtime
-  Flask            Backend API
-  Gunicorn         Production WSGI application server
-  PostgreSQL 15    Relational database
-  Alembic          Database migrations
-  Bash / Netcat    Container startup and database readiness checks
-
-## Project Structure
-
-``` text
-taskapp-docker-containerization/
-├── images/
-│   ├── backend-runtime-logs.png
-│   ├── development-override.png
-│   ├── docker-compose-config.png
-│   └── taskapp-running.png
-│
-├── dockercompose/
-│   ├── docker-compose.yml
-│   ├── taskapp_backend_cicd/
-│   └── taskapp_frontend_cicd/
-│
-├── dockercompose-override/
-│   ├── docker-compose.yml
-│   ├── docker-compose.override.yml
-│   ├── docker-compose.prod-like.yml
-│   ├── taskapp_backend_cicd/
-│   └── taskapp_frontend_cicd/
-│
-├── taskapp_backend_cicd/
-│   ├── Dockerfile
-│   ├── docker-entrypoint.sh
-│   ├── .dockerignore
-│   └── ...
-│
-├── taskapp_frontend_cicd/
-│   ├── Dockerfile
-│   ├── nginx.conf
-│   ├── .dockerignore
-│   └── ...
-│
-├── .gitignore
-└── README.md
-```
+| Technology | Purpose |
+|---|---|
+| Docker | Application containerization |
+| Docker Compose | Multi-container orchestration |
+| React / Vite | Frontend application |
+| Nginx | Frontend production runtime |
+| Python 3.11 | Backend runtime |
+| Flask | Backend API |
+| Gunicorn | Production WSGI server |
+| PostgreSQL 15 | Relational database |
+| Alembic | Database migrations |
+| Bash / Netcat | Startup and database readiness checks |
 
 ## Frontend Containerization
 
